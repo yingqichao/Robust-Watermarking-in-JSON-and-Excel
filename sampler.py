@@ -71,7 +71,7 @@ class PRNG(object):
         self.K = K
         self.cdf = gen_rsd_cdf(K, delta, c)
 
-    def _get_next(self):
+    def get_next(self):
         """Executes the next iteration of the PRNG
         evolution process, and returns the result
         """
@@ -84,7 +84,7 @@ class PRNG(object):
         distributions above and the linear PRNG output
         """
 
-        p = self._get_next() / PRNG_MAX_RAND
+        p = self.get_next() / PRNG_MAX_RAND
         for ix, v in enumerate(self.cdf):
             if v > p:
                 return ix + 1
@@ -112,7 +112,7 @@ class PRNG(object):
         have = 0
         nums = set()
         while have < d:
-            num = self._get_next() % self.K
+            num = self.get_next() % self.K
             if num not in nums:
                 nums.add(num)
                 have += 1

@@ -1,17 +1,11 @@
 import io
-import sys
 
-from struct import unpack, error
-from random import random
 from collections import defaultdict
 
 from math import ceil
 import sampler
-import argparse
-import fileinput
-import sys
-import time
-from struct import unpack, error
+import re
+from struct import unpack
 
 
 # Check node in graph
@@ -103,9 +97,10 @@ class LtDecoder(object):
     def is_done(self):
         return self.done
 
-    def consume_block(self, lt_block):
-        filesize, blocksize, blockseed, block = lt_block.split(",")
-        filesize, blocksize, blockseed, block = int(filesize), int(blocksize), int(blockseed), int(block)
+    def consume_block(self, filesize, lt_block, blocksize=1, blockseed=1):
+        # filesize, blocksize, blockseed, block = lt_block.split(",")
+        # filesize, blocksize, blockseed, block = int(filesize), int(blocksize), int(blockseed), int(block)
+        block = int(lt_block)
         # first time around, init things
         if not self.initialized:
             self.filesize = filesize
@@ -114,10 +109,11 @@ class LtDecoder(object):
             self.K = ceil(filesize / blocksize)
             self.block_graph = BlockGraph(self.K)
             self.prng = sampler.PRNG(params=(self.K, self.delta, self.c))
+            self.prng.set_seed(blockseed)
             self.initialized = True
 
         # Run PRNG with given seed to figure out which blocks were XORed to make received data
-        _, _, src_blocks = self.prng.get_src_blocks(seed=blockseed)
+        _, _, src_blocks = self.prng.get_src_blocks()# or seed=blockseed
 
         # If BP is done, stop
         self.done = self._handle_block(src_blocks, block)
@@ -167,20 +163,17 @@ def read_blocks(stream):
         yield (header, block)
 
 
-# TODO: NO validation here that the bytes consist of a *single* block
 def block_from_bytes(bts):
     return next(read_blocks(io.BytesIO(bts)))
 
 
-def decode(in_stream, out_stream=None, **kwargs):
+def decode(JSON, filesize, **kwargs):
     decoder = LtDecoder(**kwargs)
 
-    with open('target.txt', 'r') as file:
-        blocks = [line for line in file.readlines()]
-
-    # Begin forever loop
-    for lt_block in blocks:
-        decoder.consume_block(lt_block)
+    for key in JSON:
+        block = JSON[key]
+        lt_block = extract(block)
+        decoder.consume_block(filesize=filesize, lt_block=lt_block, blocksize=1, blockseed=1)
         decoder.received_packs += 1
         if decoder.is_done():
             print("Decoded Successfully...")
@@ -188,25 +181,45 @@ def decode(in_stream, out_stream=None, **kwargs):
         else:
             print("Need more Packs...Received: "+str(decoder.received_packs))
 
-    if out_stream:
-        decoder.stream_dump(out_stream)
-    else:
-        return decoder.bytes_dump()
+    return decoder.bytes_dump()
 
-def run(stream=sys.stdin.buffer):
+
+def eliminateLevels(modified_dict,ori_dict,pre):
+    sum,valid = 0,0
+    for key in ori_dict:
+        key_m = ''.join(re.findall(r'[A-Za-z]', key))
+        if isinstance(ori_dict[key], dict):
+            _ ,s,v = eliminateLevels(modified_dict, ori_dict[key], pre+key_m)
+            sum+=s
+            valid+=v
+        elif not isinstance(ori_dict[key], bool) and isinstance(ori_dict[key], (int,str,float)):
+            sum += 1
+            temp = str(ori_dict[key])
+            if len(''.join(re.findall(r'[A-Za-z0-9]', temp)))>=5 and temp[0] != '{':
+                modified_dict[pre+key_m] = ori_dict[key]
+                valid += 1
+
+    return modified_dict,sum,valid
+
+
+def run(JSON, filesize, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA):
     """Reads from stream, applying the LT decoding algorithm
     to incoming encoded blocks until sufficiently many blocks
     have been received to reconstruct the entire file.
     """
-    payload = decode(stream)
-    with open('decoded.txt', 'w') as rf:
-        rf.writelines(payload.decode('utf8'))
+    print("-----------------------------Extraction---------------------------------------")
+    modified_json = {}
+    modified_json, sum, valid = eliminateLevels(modified_json, JSON, "")
+    print(modified_json)
+    print("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
+
+    payload = decode(modified_json, filesize, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA)
+    # with open('decoded.txt', 'w') as rf:
+    #     rf.writelines(payload.decode('utf8'))
     print("     Payload: "+payload.decode('utf8'))
-    # sys.stdout.write(payload.decode('utf8'))
+    print('-----------------Extraction was conducted successfully...--------------------')
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser("decoder")
-    # try:
-    run()
-    # except error:
-    #     print("Decoder got some invalid data. Try again.", file=sys.stderr)
+    pass
+    # run(JSON, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA)
+

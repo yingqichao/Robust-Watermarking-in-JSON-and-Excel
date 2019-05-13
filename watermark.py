@@ -1,7 +1,8 @@
 import json
-import random
-import math
-import struct
+import re
+import encode
+import decode
+
 
 
 
@@ -15,11 +16,22 @@ if __name__ == "__main__":
 
     with open('original.txt', 'r') as f:
         JSON = json.load(f)
-        # print(JSON)
 
     #打印JSON
-    map = json.dumps(
-        JSON, sort_keys=True, indent=4, separators=(',', ': ')
-    )
-    print(map)
+    # map = json.dumps(JSON, sort_keys=True, indent=4, separators=(',', ': '))
+    # print(map)
+
+    #将所有key-value设为单层（去除多重的层级关系）
+
+
+    with open("text.txt", 'rb') as f:
+        f_bytes = f.read()
+
+
+    encode.run(f_bytes, JSON)
+
+    with open('target.txt', 'r') as f:
+        JSON = json.load(f)
+
+    decode.run(JSON, 10)
 
