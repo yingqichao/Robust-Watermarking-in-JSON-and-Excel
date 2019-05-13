@@ -1,12 +1,17 @@
 import io
+import sys
 
+from struct import unpack, error
+from random import random
 from collections import defaultdict
 
 from math import ceil
 import sampler
-import re
-from struct import unpack
-import Util
+import argparse
+import fileinput
+import sys
+import time
+from struct import unpack, error
 
 
 # Check node in graph
@@ -98,16 +103,15 @@ class LtDecoder(object):
     def is_done(self):
         return self.done
 
-    def consume_block(self, filesize, key, lt_block, blocksize=1):
+    def consume_block(self, filesize, lt_block, blocksize=1, blockseed=1):
         # filesize, blocksize, blockseed, block = lt_block.split(",")
         # filesize, blocksize, blockseed, block = int(filesize), int(blocksize), int(blockseed), int(block)
-        blockseed = Util.genSeed(key)
-
-        # block = int(lt_block)
+        block = int(lt_block)
         # first time around, init things
         if not self.initialized:
             self.filesize = filesize
             self.blocksize = blocksize
+
             self.K = ceil(filesize / blocksize)
             self.block_graph = BlockGraph(self.K)
             self.prng = sampler.PRNG(params=(self.K, self.delta, self.c))
@@ -116,7 +120,6 @@ class LtDecoder(object):
 
         # Run PRNG with given seed to figure out which blocks were XORed to make received data
         _, _, src_blocks = self.prng.get_src_blocks()# or seed=blockseed
-        block = extract(lt_block, self.prng)
 
         # If BP is done, stop
         self.done = self._handle_block(src_blocks, block)
@@ -169,33 +172,16 @@ def read_blocks(stream):
 def block_from_bytes(bts):
     return next(read_blocks(io.BytesIO(bts)))
 
-def extract(lt_block, prng):
-    extracted = 0
-    if isinstance(lt_block, int):
-        lt_block = str(lt_block)
-    elif isinstance(lt_block, float):
-        lt_block = str(lt_block)
-        lt_block = lt_block.replace(".", "")
 
-    s1, Set, ind = list(lt_block), set(), 0
-    while ind < 5:
-        num = prng.get_next() % len(lt_block)
-        if num not in Set:
-            Set.add(num)
-            extracted *= 2
-            extracted += ord(s1[num])
-            ind += 1
-
-    return extracted[::-1]
-
-
-def decode(JSON, filesize, **kwargs):
+def decode(in_stream, filesize,out_stream=None, **kwargs):
     decoder = LtDecoder(**kwargs)
 
-    for key in JSON:
-        lt_block = JSON[key]
+    with open('target.txt', 'r') as file:
+        blocks = [line for line in file.readlines()]
 
-        decoder.consume_block(filesize=filesize, key=key, lt_block=lt_block, blocksize=1)
+    # Begin Loop for Extraction
+    for lt_block in blocks:
+        decoder.consume_block(filesize=filesize, lt_block=lt_block, blocksize=1, blockseed=1)
         decoder.received_packs += 1
         if decoder.is_done():
             print("Decoded Successfully...")
@@ -203,27 +189,25 @@ def decode(JSON, filesize, **kwargs):
         else:
             print("Need more Packs...Received: "+str(decoder.received_packs))
 
-    return decoder.bytes_dump()
+    if out_stream:
+        decoder.stream_dump(out_stream)
+    else:
+        return decoder.bytes_dump()
 
-
-def run(JSON, filesize, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA):
+def run(filesize,stream=sys.stdin.buffer):
     """Reads from stream, applying the LT decoding algorithm
     to incoming encoded blocks until sufficiently many blocks
     have been received to reconstruct the entire file.
     """
-    print("-----------------------------Extraction---------------------------------------")
-    modified_json = {}
-    modified_json, sum, valid = Util.eliminateLevels(modified_json, JSON, "")
-    print(modified_json)
-    print("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
-
-    payload = decode(modified_json, filesize, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA)
-    # with open('decoded.txt', 'w') as rf:
-    #     rf.writelines(payload.decode('utf8'))
+    payload = decode(filesize,stream)
+    with open('decoded.txt', 'w') as rf:
+        rf.writelines(payload.decode('utf8'))
     print("     Payload: "+payload.decode('utf8'))
-    print('-----------------Extraction was conducted successfully...--------------------')
+    # sys.stdout.write(payload.decode('utf8'))
 
 if __name__ == '__main__':
-    pass
-    # run(JSON, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA)
-
+    # parser = argparse.ArgumentParser("decoder")
+    # try:
+    run(10)
+    # except error:
+    #     print("Decoder got some invalid data. Try again.", file=sys.stderr)
