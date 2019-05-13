@@ -17,12 +17,15 @@ def _split_file(f_bytes, blocksize):
 
 
 def modify(key, data, prng):
-
-    key1 = key
+    print("Debug Embed: " + str(data))
+    key1,first = key,''
+    #对于数字，首位不嵌入信息
     if isinstance(key, int):
-        key1 = str(key)
+        first = str(key)[0]
+        key1 = str(key)[1:]
     elif isinstance(key, float):
-        key1 = str(key)
+        first = str(key)[0]
+        key1 = str(key)[1:]
         index = key1.find(".")
         key1 = key1.replace(".","")
 
@@ -40,9 +43,11 @@ def modify(key, data, prng):
     key1 = ''.join(s1)
 
     if isinstance(key, int):
+        key1 = first + key1
         key1 = int(key1)
     elif isinstance(key, float):
-        key1 = key1[0:index-1]+"."+key1[index:len(key1)]
+        key1 = key1[0:index]+"."+key1[index:len(key1)]
+        key1 = first + key1
         key1 = float(key1)
 
     return key1

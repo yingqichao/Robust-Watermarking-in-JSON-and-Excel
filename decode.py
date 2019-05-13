@@ -111,9 +111,9 @@ class LtDecoder(object):
             self.K = ceil(filesize / blocksize)
             self.block_graph = BlockGraph(self.K)
             self.prng = sampler.PRNG(params=(self.K, self.delta, self.c))
-            self.prng.set_seed(blockseed)
             self.initialized = True
 
+        self.prng.set_seed(blockseed)
         # Run PRNG with given seed to figure out which blocks were XORed to make received data
         _, _, src_blocks = self.prng.get_src_blocks()# or seed=blockseed
         block = extract(lt_block, self.prng)
@@ -172,9 +172,9 @@ def block_from_bytes(bts):
 def extract(lt_block, prng):
     extracted = 0
     if isinstance(lt_block, int):
-        lt_block = str(lt_block)
+        lt_block = str(lt_block)[1:]
     elif isinstance(lt_block, float):
-        lt_block = str(lt_block)
+        lt_block = str(lt_block)[1:]
         lt_block = lt_block.replace(".", "")
 
     s1, Set, ind = list(lt_block), set(), 0
@@ -182,11 +182,10 @@ def extract(lt_block, prng):
         num = prng.get_next() % len(lt_block)
         if num not in Set:
             Set.add(num)
-            extracted *= 2
-            extracted += ord(s1[num])
+            extracted += (ord(s1[num]) % 2)*pow(2,ind)
             ind += 1
-
-    return extracted[::-1]
+    print("Debug Extract: " + str(extracted))
+    return extracted
 
 
 def decode(JSON, filesize, **kwargs):
@@ -217,10 +216,11 @@ def run(JSON, filesize, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.
     print(modified_json)
     print("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
 
-    payload = decode(modified_json, filesize, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA)
+    payload = decode(modified_json, filesize, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA)
     # with open('decoded.txt', 'w') as rf:
     #     rf.writelines(payload.decode('utf8'))
-    print("     Payload: "+payload.decode('utf8'))
+    res = [chr(ord('a')+i) for i in payload]
+    print("     Payload: "+''.join(res))
     print('-----------------Extraction was conducted successfully...--------------------')
 
 if __name__ == '__main__':

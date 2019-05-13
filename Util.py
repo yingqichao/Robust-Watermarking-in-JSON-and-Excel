@@ -24,7 +24,7 @@ def eliminateLevels(modified_dict,ori_dict,pre):
         elif not isinstance(ori_dict[key], bool) and isinstance(ori_dict[key], (int,str,float)):
             sum += 1
             temp = str(ori_dict[key])
-            if len(''.join(re.findall(r'[A-Za-z0-9]', temp)))>=5 and temp[0] != '{':
+            if len(''.join(re.findall(r'[A-Za-z0-9]', temp)))>5 and temp[0] != '{':
                 modified_dict[pre+key_m] = ori_dict[key]
                 valid += 1
 
