@@ -1,0 +1,53 @@
+-----------------------------Embedding---------------------------------------
+{'logDataeventInfodetectStart': 1554083172.2377, 'logDataeventInforeqid': '275765ca16d63d39d5', 'logDataeventInfocreatetime': '1554083135', 'logDataeventInfosn': '360T0528748', 'logDataeventInfodetectEnd': 1554083187.654, 'logDataeventInfodetectSpent': 15.416320085526, 'logDataimageInfosnapshot': '2cd251950b69d6bfda28b69a1cb17ca44367ec5d-3-2-3-768-688.jpg', 'logDataimageInfocreatetime': 1554083172, 'logDataimageInfovideokey': '97b4656a876fca3072848c2300e15601076bf4f7-2-10-3.mp4', 'logDataimageInfovideosize': 3498972, 'logDataoptionsbindInfoqid': '978315492', 'logDataoptionsbindInfobindqid': '978315492', 'logDataoptionsbindInfots': '352471000', 'logDataoptionsbindInfoid': '935937862', 'logDataoptionsbindInfoplaykey': '691c9e76ed9b9ba6f5c864bd6bf7591f', 'logDataoptionsbindInfocreatetime': '2019-02-05 15:41:11', 'logDataoptionsbindInfosn': '360T0528748', 'logDataoptionsbindInfoplaytime': '2019-03-01 22:53:07', 'logDataoptionsbindInfomodifytime': '2019-03-05 16:38:09', 'logDataoptionsdetectFacedatavideourl': 'http://q3.jia.360.cn:8360/image/viewVideo?videoKey=97b4656a876fca3072848c2300e15601076bf4f7-2-10-3.mp4&sn=360T0528748&sign=c8610cc0a6c2de7dba840915719afff5&signTS=1554083172', 'logDataoptionsdetectFacedataqid': '978315492', 'logDataoptionsdetectFacedataimageid': 'http://q3.jia.360.cn:8360/image/viewVideo?videoKey=97b4656a876fca3072848c2300e15601076bf4f7-2-10-3.mp4&sn=360T0528748&sign=c8610cc0a6c2de7dba840915719afff5&signTS=1554083172', 'logDataoptionsdetectFacedataFPS': 20.008238, 'logDataoptionsdetectFacefunc': 'get_face_info'}
+Sum of KEYS: 50. Sum of Valid: 24
+Debug Embed: 15 7 1554183172.3377
+Debug Embed: 12 14 275765ca16d63d29d5
+Debug Embed: 22 5 1554182135
+Debug Embed: 22 8 361T0538648
+Debug Embed: 18 8 1554093186.654
+Debug Embed: 16 6 15.416330085526
+Debug Embed: 25 48 2cd251950b69d6bfd`28b69a1cb17ca44367ec5d-3-2-3-778-688.jpg
+Debug Embed: 14 6 1554083073
+Debug Embed: 2 14 97b4656a876fca2072848c2300e15600076bf4f7-2-10-3.mp4
+Debug Embed: 8 0 3488963
+Debug Embed: 5 4 968215492
+Debug Embed: 14 3 969215492
+Debug Embed: 26 5 253570100
+Debug Embed: 8 8 935826862
+Debug Embed: 16 15 691c9e76ed9b9b`6f5c864bd6cf7591f
+Debug Embed: 6 4 2119,02-05 05:41:11
+Debug Embed: 21 7 261T1529748
+Debug Embed: 28 8 2019-03-01!22:53:07
+Debug Embed: 13 4 2019-13-05!16:38:09
+Debug Embed: 17 110 http://q3.jia.360.cn:8360/image/viewVideo?videoKey=97b4656a876fca2072848c2300e15601076bf4f7-2-10-3.mp4&sn=360T1528748&sign=c8610cc0a6c2de7dba840915719afff5&signTS=1554083172
+Debug Embed: 8 0 868315482
+Debug Embed: 8 34 http://q3.jia.360.cn:8360/image/vidwWideo?videoKey=97b4656a876fca3072848c2300e15601076bf4f7-2-10-3.mp4&sn=360T0528748&sign=c8610cc0a6c2de7dba840915709afff5&signTS=1554083172
+Debug Embed: 30 1 21.019238
+Debug Embed: 30 2 get_gace_iofo
+-----------------Embedding was conducted successfully...--------------------
+-----------------------------Extraction---------------------------------------
+{'logDataeventInfodetectStart': 1554183172.3377, 'logDataeventInforeqid': '275765ca16d63d29d5', 'logDataeventInfocreatetime': '1554182135', 'logDataeventInfosn': '361T0538648', 'logDataeventInfodetectEnd': 1554093186.654, 'logDataeventInfodetectSpent': 15.416330085526, 'logDataimageInfosnapshot': '2cd251950b69d6bfd`28b69a1cb17ca44367ec5d-3-2-3-778-688.jpg', 'logDataimageInfocreatetime': 1554083073, 'logDataimageInfovideokey': '97b4656a876fca2072848c2300e15600076bf4f7-2-10-3.mp4', 'logDataimageInfovideosize': 3488963, 'logDataoptionsbindInfoqid': '968215492', 'logDataoptionsbindInfobindqid': '969215492', 'logDataoptionsbindInfots': '253570100', 'logDataoptionsbindInfoid': '935826862', 'logDataoptionsbindInfoplaykey': '691c9e76ed9b9b`6f5c864bd6cf7591f', 'logDataoptionsbindInfocreatetime': '2119,02-05 05:41:11', 'logDataoptionsbindInfosn': '261T1529748', 'logDataoptionsbindInfoplaytime': '2019-03-01!22:53:07', 'logDataoptionsbindInfomodifytime': '2019-13-05!16:38:09', 'logDataoptionsdetectFacedatavideourl': 'http://q3.jia.360.cn:8360/image/viewVideo?videoKey=97b4656a876fca2072848c2300e15601076bf4f7-2-10-3.mp4&sn=360T1528748&sign=c8610cc0a6c2de7dba840915719afff5&signTS=1554083172', 'logDataoptionsdetectFacedataqid': '868315482', 'logDataoptionsdetectFacedataimageid': 'http://q3.jia.360.cn:8360/image/vidwWideo?videoKey=97b4656a876fca3072848c2300e15601076bf4f7-2-10-3.mp4&sn=360T0528748&sign=c8610cc0a6c2de7dba840915709afff5&signTS=1554083172', 'logDataoptionsdetectFacedataFPS': 21.019238, 'logDataoptionsdetectFacefunc': 'get_gace_iofo'}
+Sum of KEYS: 24. Sum of Valid: 24
+Debug Extract: 15 7 1554183172.3377
+Need more Packs...Received: 1
+Debug Extract: 12 14 275765ca16d63d29d5
+Need more Packs...Received: 2
+Debug Extract: 22 5 1554182135
+Need more Packs...Received: 3
+Debug Extract: 22 8 361T0538648
+Need more Packs...Received: 4
+Debug Extract: 18 8 1554093186.654
+Need more Packs...Received: 5
+Debug Extract: 16 6 15.416330085526
+Need more Packs...Received: 6
+Debug Extract: 25 48 2cd251950b69d6bfd`28b69a1cb17ca44367ec5d-3-2-3-778-688.jpg
+Need more Packs...Received: 7
+Debug Extract: 14 6 1554083073
+Need more Packs...Received: 8
+Debug Extract: 2 14 97b4656a876fca2072848c2300e15600076bf4f7-2-10-3.mp4
+Need more Packs...Received: 9
+Debug Extract: 8 0 3488963
+Decoded Successfully...
+     Payload: qichaoying
+-----------------Extraction was conducted successfully...--------------------

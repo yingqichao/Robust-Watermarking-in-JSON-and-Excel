@@ -83,14 +83,14 @@ class BlockGraph(object):
 
 class LtDecoder(object):
 
-    def __init__(self, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA):
+    def __init__(self, log, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA):
         self.received_packs = 0
         self.c = c
         self.delta = delta
         self.K = 0
         self.filesize = 0
         self.blocksize = 0
-
+        self.log = log
         self.block_graph = None
         self.prng = None
         self.initialized = False
@@ -116,11 +116,31 @@ class LtDecoder(object):
         self.prng.set_seed(blockseed)
         # Run PRNG with given seed to figure out which blocks were XORed to make received data
         _, _, src_blocks = self.prng.get_src_blocks()# or seed=blockseed
-        block = extract(lt_block, self.prng)
+        block = self.extract(lt_block, self.prng)
 
         # If BP is done, stop
         self.done = self._handle_block(src_blocks, block)
         return self.done
+
+    def extract(self, lt_block, prng):
+        extracted, ori_block = 0, lt_block
+        if isinstance(lt_block, int):
+            lt_block = str(lt_block)[1:]
+        elif isinstance(lt_block, float):
+            lt_block = str(lt_block)[1:]
+            lt_block = lt_block.replace(".", "")
+
+        s1, Set, ind = list(lt_block), set(), 0
+        while ind < 5:
+            num = prng.get_next() % len(lt_block)
+            if ind == 0:
+                buff = num
+            if num not in Set:
+                Set.add(num)
+                extracted += (ord(s1[num]) % 2) * pow(2, ind)
+                ind += 1
+        print("Debug Extract: " + str(extracted) + " " + str(buff) + " " + str(ori_block))
+        return extracted
 
     def bytes_dump(self):
         buffer = io.BytesIO()
@@ -138,90 +158,75 @@ class LtDecoder(object):
                 out_stream.write(block_bytes[:self.filesize % self.blocksize])
 
     def _handle_block(self, src_blocks, block):
-        #What to do with new block: add check and pass messages in graph
+        # What to do with new block: add check and pass messages in graph
 
         return self.block_graph.add_block(src_blocks, block)
 
 
-def _read_header(stream):
-    """Read block header from network
-    """
-    header_bytes = stream.read(12)
-    return unpack('!III', header_bytes)
+class decode:
+    def __init__(self,log=None):
+        self.log = log
+
+    def _read_header(self,stream):
+        """Read block header from network
+        """
+        header_bytes = stream.read(12)
+        return unpack('!III', header_bytes)
+
+    def _read_block(self,blocksize, stream):
+        """Read block data from network into integer type
+        """
+        blockdata = stream.read(blocksize)
+        return int.from_bytes(blockdata, 'big')
+
+    def read_blocks(self,stream):
+        """Generate parsed blocks from input stream
+        """
+        while True:
+            header = self._read_header(stream)
+            block = self._read_block(header[1], stream)
+            yield (header, block)
+
+    def block_from_bytes(self,bts):
+        return next(self.read_blocks(io.BytesIO(bts)))
+
+    def decode(self, JSON, filesize, **kwargs):
+        decoder = LtDecoder(self.log, **kwargs)
+
+        for key in JSON:
+            lt_block = JSON[key]
+
+            decoder.consume_block(filesize=filesize, key=key, lt_block=lt_block, blocksize=1)
+            decoder.received_packs += 1
+            if decoder.is_done():
+                print("Decoded Successfully...")
+                break
+            else:
+                print("Need more Packs...Received: "+str(decoder.received_packs))
+
+        return decoder.bytes_dump()
 
 
-def _read_block(blocksize, stream):
-    """Read block data from network into integer type
-    """
-    blockdata = stream.read(blocksize)
-    return int.from_bytes(blockdata, 'big')
+    def run(self,JSON, filesize, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA,log=None):
+        """Reads from stream, applying the LT decoding algorithm
+        to incoming encoded blocks until sufficiently many blocks
+        have been received to reconstruct the entire file.
 
 
-def read_blocks(stream):
-    """Generate parsed blocks from input stream
-    """
-    while True:
-        header = _read_header(stream)
-        block = _read_block(header[1], stream)
-        yield (header, block)
 
+        """
+        print("-----------------------------Extraction---------------------------------------")
+        modified_json = {}
+        modified_json, sum, valid = Util.eliminateLevels(modified_json, JSON, "")
+        print(modified_json)
+        print("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
 
-def block_from_bytes(bts):
-    return next(read_blocks(io.BytesIO(bts)))
-
-def extract(lt_block, prng):
-    extracted = 0
-    if isinstance(lt_block, int):
-        lt_block = str(lt_block)[1:]
-    elif isinstance(lt_block, float):
-        lt_block = str(lt_block)[1:]
-        lt_block = lt_block.replace(".", "")
-
-    s1, Set, ind = list(lt_block), set(), 0
-    while ind < 5:
-        num = prng.get_next() % len(lt_block)
-        if num not in Set:
-            Set.add(num)
-            extracted += (ord(s1[num]) % 2)*pow(2,ind)
-            ind += 1
-    print("Debug Extract: " + str(extracted))
-    return extracted
-
-
-def decode(JSON, filesize, **kwargs):
-    decoder = LtDecoder(**kwargs)
-
-    for key in JSON:
-        lt_block = JSON[key]
-
-        decoder.consume_block(filesize=filesize, key=key, lt_block=lt_block, blocksize=1)
-        decoder.received_packs += 1
-        if decoder.is_done():
-            print("Decoded Successfully...")
-            break
-        else:
-            print("Need more Packs...Received: "+str(decoder.received_packs))
-
-    return decoder.bytes_dump()
-
-
-def run(JSON, filesize, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA):
-    """Reads from stream, applying the LT decoding algorithm
-    to incoming encoded blocks until sufficiently many blocks
-    have been received to reconstruct the entire file.
-    """
-    print("-----------------------------Extraction---------------------------------------")
-    modified_json = {}
-    modified_json, sum, valid = Util.eliminateLevels(modified_json, JSON, "")
-    print(modified_json)
-    print("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
-
-    payload = decode(modified_json, filesize, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA)
-    # with open('decoded.txt', 'w') as rf:
-    #     rf.writelines(payload.decode('utf8'))
-    res = [chr(ord('a')+i) for i in payload]
-    print("     Payload: "+''.join(res))
-    print('-----------------Extraction was conducted successfully...--------------------')
+        payload = self.decode(modified_json, filesize)
+        # with open('decoded.txt', 'w') as rf:
+        #     rf.writelines(payload.decode('utf8'))
+        res = [chr(ord('a')+i) for i in payload]
+        print("     Payload: "+''.join(res))
+        print('-----------------Extraction was conducted successfully...--------------------')
 
 if __name__ == '__main__':
     pass
