@@ -3,6 +3,8 @@ import re
 import encode
 import decode
 import logger
+import randomattacker
+import Util
 
 
 
@@ -21,21 +23,28 @@ if __name__ == "__main__":
     with open('original.txt', 'r') as f:
         JSON = json.load(f)
 
-    #打印JSON
+    modified_json = {}
+    modified_json, sum, valid = Util.eliminateLevels(modified_json, JSON, "")
+
+    #打印JSON,将所有key-value设为单层（去除多重的层级关系）
     # map = json.dumps(JSON, sort_keys=True, indent=4, separators=(',', ': '))
     # log.write(map)
-
-    #将所有key-value设为单层（去除多重的层级关系）
-
 
     with open("text.txt", 'r') as f:
         f_bytes = f.read()
 
-    enc = encode.encode(log=log)
-    enc.run(f_bytes, JSON)
+    enc = encode.encode(f_bytes,log=log)
+    embeddedJSON = enc.run(JSON)
 
     with open('target.txt', 'r') as f:
         JSON = json.load(f)
+
+
+    # 随机删减攻击
+    JSON, remove_valid, remain_valid, remove_invalid, remain_invalid = randomattacker.randomattack(JSON, total=0.5, core=0.8)
+    log.write("--------------------------------------------------------------------")
+    log.write("随机删减攻击(保留/删除)： 有效字段 "+str(remain_valid)+"/"+str(remove_valid)+"  无效字段 "+str(remain_valid)+"/"+str(remove_invalid))
+    log.write("--------------------------------------------------------------------")
 
     dec = decode.decode(log=log)
     dec.run(JSON, 10)

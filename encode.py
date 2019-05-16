@@ -7,19 +7,26 @@ import Util
 
 
 class encode:
-    def __init__(self,log=None):
+    def __init__(self,f_bytes,log=None,blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA , numpacks=30):
         self.log = log
-    
-    
-    def _split_file(self,f_bytes, blocksize):
+        self.blocksize, self.seed, self.c , self.delta , self.numpacks = 1,1,sampler.DEFAULT_C,sampler.DEFAULT_DELTA,30
+        self.f_bytes = f_bytes
+        # get file blocks
+        self.filesize, self.blocks = self._split_file(self.f_bytes)
+
+        # init stream vars
+        K = len(self.blocks)
+        self.prng = sampler.PRNG(params=(K, self.delta, self.c))
+
+
+    def _split_file(self,f_bytes):
         """Block file byte contents into blocksize chunks, padding last one if necessary
         """
     
         blocks = [int(ord(f_bytes[i])-ord('a'))
-                for i in range(0, len(f_bytes), blocksize)]
+                for i in range(0, len(f_bytes), self.blocksize)]
         return len(f_bytes), blocks
-    
-    
+
     
     def modify(self,key, data, prng):
     
@@ -33,9 +40,7 @@ class encode:
             key1 = str(key)[1:]
             index = key1.find(".")
             key1 = key1.replace(".","")
-    
-    
-    
+
         s1, Set, ind = list(key1), set(), 0
         while ind < 5:
             num = prng.get_next() % len(key1)
@@ -62,49 +67,77 @@ class encode:
         return key1
     
     
-    def encoder(self,f_bytes,JSON, blocksize,  c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA,):
+    def encoder(self,key,value):
         """Generates an infinite sequence of blocks to transmit
         to the receiver
         """
-    
-    
-        # get file blocks
-        filesize, blocks = self._split_file(f_bytes, blocksize)
-    
-        # init stream vars
-        K = len(blocks)
-        prng = sampler.PRNG(params=(K, delta, c))
-    
-    
+
         # block generation loop
-        for key in JSON:
+        # for key in JSON:
             # Every Key has its unique Seed according to its alphabet
-            seed = Util.genSeed(key)
-            prng.set_seed(seed)
-            blockseed, d, ix_samples = prng.get_src_blocks()
-            block_data = 0
-            for ix in ix_samples:
-                block_data ^= blocks[ix]
+        seed = Util.genSeed(key)
+        self.prng.set_seed(seed)
+        blockseed, d, ix_samples = self.prng.get_src_blocks()
+        block_data = 0
+        for ix in ix_samples:
+            block_data ^= self.blocks[ix]
+
+        #根据结果修改JSON
+        return self.modify(value, block_data, self.prng)
+        # return JSON
+
+    def dec2alpha(self, dec):
+        dec += 1
+        res = ""
+        while dec != 0:
+            alp = dec % 26
+            res += chr(ord('A') - 1 + dec)
+            dec = int(dec / 26)
+
+        return res
+
+    def eliminateLevels(self, ori_dict, pre):
+        sum, valid = 0, 0
+        if not isinstance(ori_dict, dict):
+            return ori_dict, 1, 0
+        for key in ori_dict:
+            key_m = ''.join(re.findall(r'[A-Za-z0-9]', key))
+            if isinstance(ori_dict[key], dict):
+                _, s, v = self.eliminateLevels(ori_dict[key], pre + key_m)
+                sum += s
+                valid += v
+            elif isinstance(ori_dict[key], list):
+                for ind,item in enumerate(ori_dict[key]):
+                    _, s, v = self.eliminateLevels(item, pre + key_m + str(self.dec2alpha(ind)))
+                    sum += s
+                    valid += v
+            elif not isinstance(ori_dict[key], bool) and isinstance(ori_dict[key], (int, str, float)):
+                sum += 1
+                temp = str(ori_dict[key])
+                if len(''.join(re.findall(r'[A-Za-z0-9]', temp))) > 5 and temp[0] != '{':
+                    # conduct embedding
+                    ori_dict[key] = self.encoder(pre + key_m,ori_dict[key])
+                    valid += 1
+
+        return ori_dict, sum, valid
     
-            #根据结果修改JSON
-            JSON[key] = self.modify(JSON[key], block_data, prng)
-    
-        return JSON
     
     
-    
-    def run(self,f_bytes, JSON, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA , numpacks=30):
+    def run(self, JSON):
         self.log.write("-----------------------------Embedding---------------------------------------")
-        modified_json = {}
-        modified_json, sum, valid = Util.eliminateLevels(modified_json, JSON, "")
-        self.log.write(json.dumps(modified_json))
+
+
+        block, sum, valid = self.eliminateLevels(JSON, "")
+        # self.log.write(json.dumps(modified_json))
         self.log.write("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
     
-        block = self.encoder(f_bytes, modified_json, blocksize,  c, delta)
+        # block = self.encoder(f_bytes, modified_json, blocksize,  c, delta)
         json_str = json.dumps(block)
         with open('target.txt', 'w') as rf:
             rf.writelines(json_str)
         self.log.write('-----------------Embedding was conducted successfully...--------------------')
+
+        return block
 
 
 if __name__ == '__main__':
