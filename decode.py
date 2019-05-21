@@ -236,6 +236,7 @@ class decode:
         res = [chr(ord('a')+i) for i in payload]
         print("     Payload: "+''.join(res))
         print('-----------------Extraction was conducted successfully...--------------------')
+        return ''.join(res)
 
 if __name__ == '__main__':
     pass
