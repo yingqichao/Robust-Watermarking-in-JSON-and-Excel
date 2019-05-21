@@ -1,5 +1,5 @@
 import io
-
+import hamming
 from collections import defaultdict
 
 from math import ceil
@@ -101,7 +101,7 @@ class LtDecoder(object):
     def consume_block(self, filesize, key, lt_block, blocksize=1):
         # filesize, blocksize, blockseed, block = lt_block.split(",")
         # filesize, blocksize, blockseed, block = int(filesize), int(blocksize), int(blockseed), int(block)
-        blockseed = Util.genSeed(key)
+        blockseed = Util.BKDRHash(key)
 
         # block = int(lt_block)
         # first time around, init things
@@ -116,14 +116,19 @@ class LtDecoder(object):
         self.prng.set_seed(blockseed)
         # Run PRNG with given seed to figure out which blocks were XORed to make received data
         _, _, src_blocks = self.prng.get_src_blocks()# or seed=blockseed
-        block = self.extract(lt_block, self.prng)
+        block,verify = self.extract(lt_block, self.prng)
 
+        #check if the code is legal according to CRC
+        if hamming.crc_check(verify):
         # If BP is done, stop
-        self.done = self._handle_block(src_blocks, block)
+            print("Valid Package.")
+            self.done = self._handle_block(src_blocks, block)
+        else:
+            print("Invalid Package.Skip...")
         return self.done
 
-    def extract(self, lt_block, prng):
-        extracted, ori_block = 0, lt_block
+    def extract(self, lt_block, prng, strlen=7):
+        extracted, ori_block, verify = 0, lt_block, ''
         if isinstance(lt_block, int):
             lt_block = str(lt_block)[1:]
         elif isinstance(lt_block, float):
@@ -131,16 +136,20 @@ class LtDecoder(object):
             lt_block = lt_block.replace(".", "")
 
         s1, Set, ind = list(lt_block), set(), 0
-        while ind < 5:
+        while ind < strlen:
             num = prng.get_next() % len(lt_block)
             if ind == 0:
                 buff = num
             if num not in Set:
                 Set.add(num)
-                extracted += (ord(s1[num]) % 2) * pow(2, ind)
+                if ind < 5:
+                    extracted *= 2
+                    extracted += (ord(s1[num]) % 2)# * pow(2, ind)
+                verify += str(ord(s1[num]) % 2)
                 ind += 1
+
         print("Debug Extract: " + str(extracted) + " " + str(buff) + " " + str(ori_block))
-        return extracted
+        return extracted,verify
 
     def bytes_dump(self):
         buffer = io.BytesIO()

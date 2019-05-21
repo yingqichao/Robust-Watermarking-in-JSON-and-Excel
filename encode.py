@@ -4,6 +4,7 @@ import sampler
 import json
 import re
 import Util
+import hamming
 
 
 class encode:
@@ -42,15 +43,20 @@ class encode:
             key1 = key1.replace(".","")
 
         s1, Set, ind = list(key1), set(), 0
-        while ind < 5:
+
+        #Generate bitstream and sent it to the CRC
+        text = bin(data).replace('0b', '')
+        crc_text = '0'*(5-len(text)) + text + hamming.crc_remainder(text)
+
+        while ind < len(crc_text):
             num = prng.get_next() % len(key1)
             if ind==0:
                 buffer = num
             if num not in Set:
                 Set.add(num)
                 ori = ord(s1[num])
-                s1[num] = chr(ori - ori % 2 + data % 2)
-                data = int(data/2)
+                s1[num] = chr(ori - ori % 2 + ord(crc_text[ind])-ord('0'))
+                # data = int(data/2)
                 ind += 1
     
         key1 = ''.join(s1)
@@ -75,7 +81,7 @@ class encode:
         # block generation loop
         # for key in JSON:
             # Every Key has its unique Seed according to its alphabet
-        seed = Util.genSeed(key)
+        seed = Util.BKDRHash(key)
         self.prng.set_seed(seed)
         blockseed, d, ix_samples = self.prng.get_src_blocks()
         block_data = 0
@@ -96,7 +102,7 @@ class encode:
 
         return res
 
-    def eliminateLevels(self, ori_dict, pre):
+    def eliminateLevels(self, ori_dict, pre, minlen=9):
         sum, valid = 0, 0
         if not isinstance(ori_dict, dict):
             return ori_dict, 1, 0
@@ -114,7 +120,7 @@ class encode:
             elif not isinstance(ori_dict[key], bool) and isinstance(ori_dict[key], (int, str, float)):
                 sum += 1
                 temp = str(ori_dict[key])
-                if len(''.join(re.findall(r'[A-Za-z0-9]', temp))) > 5 and temp[0] != '{':
+                if len(''.join(re.findall(r'[A-Za-z0-9]', temp))) > minlen and temp[0] != '{':
                     # conduct embedding
                     ori_dict[key] = self.encoder(pre + key_m,ori_dict[key])
                     valid += 1

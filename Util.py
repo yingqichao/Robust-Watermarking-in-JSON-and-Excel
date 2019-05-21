@@ -19,7 +19,7 @@ def genSeed(key):
     return round(res)
 
 
-def eliminateLevels(modified_dict,ori_dict,pre):
+def eliminateLevels(modified_dict,ori_dict,pre, minlen=9):
     sum,valid = 0,0
     if not isinstance(ori_dict, dict):
         return modified_dict,1,0
@@ -38,7 +38,7 @@ def eliminateLevels(modified_dict,ori_dict,pre):
         elif not isinstance(ori_dict[key], bool) and isinstance(ori_dict[key], (int,str,float)):
             sum += 1
             temp = str(ori_dict[key])
-            if len(''.join(re.findall(r'[A-Za-z0-9]', temp)))>5 and temp[0] != '{':
+            if len(''.join(re.findall(r'[A-Za-z0-9]', temp))) > minlen and temp[0] != '{':
                 modified_dict[pre+key_m] = ori_dict[key]
                 valid += 1
 
@@ -54,3 +54,47 @@ def dec2alpha(dec):
         dec = int(dec/26)
 
     return res
+
+# // BKDR
+# Hash
+# Function
+# unsigned
+# int
+# BKDRHash(char * str)
+# {
+#     unsigned
+# int
+# seed = 131; // 31
+# 131
+# 1313
+# 13131
+# 131313
+# etc..
+#     unsigned
+# int
+# hash = 0;
+#
+# while (*str)
+#     {
+#         hash = hash * seed + (*str + +);
+#     }
+#
+#     return (hash & 0x7FFFFFFF);
+# }
+def BKDRHash(str,seed=131):
+    # seed = 131
+    hash = 0
+    for ch in str:
+        if ord(ch)>=ord('a') and ord(ch)<=ord('z'):
+            ans = ord(ch)-ord('a')
+        elif ord(ch)>=ord('A') and ord(ch)<=ord('Z'):
+            ans = ord(ch)-ord('A')
+        else:
+            ans = ord(ch)-ord('0')
+        hash = hash * seed + ans
+        hash = hash & 0x7FFFFFFF
+
+    return hash
+
+
+
