@@ -5,7 +5,6 @@ import decode
 import logger
 import json
 
-import requests
 
 class tkDecode(tk.Tk):
     def __init__(self):
@@ -18,6 +17,7 @@ class tkDecode(tk.Tk):
 
         main = tk.Frame(self.notebook)
         second = tk.Frame(self.notebook)
+        secondhalf = tk.Frame(self.notebook)
         third = tk.Frame(self.notebook)
 
         self.conduct_button = tk.Button(main, text="提取", command=self.decode)
@@ -35,6 +35,9 @@ class tkDecode(tk.Tk):
         self.watermark_label = tk.Label(second, textvar=self.watermark, bg="lightgrey", fg="black")
         self.watermark_label.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+        self.data_str = tk.Text(secondhalf, bg="white", fg="black")
+        self.data_str.pack(side=tk.TOP, fill=tk.BOTH)
+
         self.loginfo = tk.StringVar(third)
         self.loginfo.set("")
 
@@ -42,6 +45,7 @@ class tkDecode(tk.Tk):
         self.loginfo_label.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         self.notebook.add(main, text="输入JSON格式")
+        self.notebook.add(secondhalf, text="信息长度")
         self.notebook.add(second, text="提取结果")
         self.notebook.add(third, text="日志")
 
@@ -51,9 +55,9 @@ class tkDecode(tk.Tk):
         try:
             text = self.json_str.get(1.0, tk.END)
             JSON = json.loads(text)
-            log = logger.Logger()
+            log = logger.Logger(filename=None)
             dec = decode.decode(log=log)
-            watermark = dec.run(JSON, 10)
+            watermark = dec.run(JSON, int(self.data_str.get(1.0, tk.END)))
             self.watermark.set(watermark)
             self.loginfo.set(log.str)
             msg.showinfo("Decode Successful", "Decode Successful")

@@ -41,11 +41,19 @@ if __name__ == "__main__":
 
 
     # 随机删减攻击
-    JSON, remove_valid, remain_valid, remove_invalid, remain_invalid = randomattacker.randomattack(JSON, total=0.5, core=0.8)
+    modifystrength = 0.1
+
+    JSON, remove_valid, remain_valid, remove_invalid, remain_invalid = randomattacker.randomattack(JSON, total=0.5, core=0.9)
     log.write("--------------------------------------------------------------------")
     log.write("随机删减攻击(保留/删除)： 有效字段 "+str(remain_valid)+"/"+str(remove_valid)+"  无效字段 "+str(remain_valid)+"/"+str(remove_invalid))
     log.write("--------------------------------------------------------------------")
 
+    # JSON, remove_valid, remain_valid, remove_invalid, remain_invalid = randomattacker.randommodification(JSON, total=0.5, core=0.8, modifystrength=modifystrength)
+    # log.write("--------------------------------------------------------------------")
+    # log.write("随机修改攻击(保留/修改)： 有效字段 " + str(remain_valid) + "/" + str(remove_valid) + "  无效字段 " + str(
+    #     remain_valid) + "/" + str(remove_invalid) + "  修改强度：" + str(modifystrength))
+    # log.write("--------------------------------------------------------------------")
+
     dec = decode.decode(log=log)
-    dec.run(JSON, 10)
+    dec.run(JSON, len(f_bytes))
 

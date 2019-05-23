@@ -5,7 +5,6 @@ import encode
 import logger
 import json
 
-import requests
 
 class tkEncode(tk.Tk):
     def __init__(self):
@@ -66,7 +65,7 @@ class tkEncode(tk.Tk):
             text = self.json_str.get(1.0, tk.END)
             data = self.data_str.get(1.0, tk.END)
             JSON = json.loads(text)
-            log = logger.Logger()
+            log = logger.Logger(filename=None)
             enc = encode.encode(data, log=log)
             embeddedJSON = enc.run(JSON)
             # self.watermark.set(embeddedJSON)

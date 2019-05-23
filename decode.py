@@ -1,6 +1,7 @@
 import io
 import hamming
 from collections import defaultdict
+import json
 
 from math import ceil
 import sampler
@@ -84,6 +85,7 @@ class BlockGraph(object):
 class LtDecoder(object):
 
     def __init__(self, log, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA):
+        self.success_time = 0
         self.received_packs = 0
         self.c = c
         self.delta = delta
@@ -91,6 +93,13 @@ class LtDecoder(object):
         self.filesize = 0
         self.blocksize = 0
         self.log = log
+        self.block_graph = None
+        self.prng = None
+        self.initialized = False
+
+    def succeed_and_init(self):
+        self.received_packs = 0
+        self.K = 0
         self.block_graph = None
         self.prng = None
         self.initialized = False
@@ -123,9 +132,11 @@ class LtDecoder(object):
         # If BP is done, stop
             print("Valid Package.")
             self.done = self._handle_block(src_blocks, block)
+            return self.done
         else:
             print("Invalid Package.Skip...")
-        return self.done
+            return None
+
 
     def extract(self, lt_block, prng, strlen=7):
         extracted, ori_block, verify = 0, lt_block, ''
@@ -148,23 +159,33 @@ class LtDecoder(object):
                 verify += str(ord(s1[num]) % 2)
                 ind += 1
 
-        print("Debug Extract: " + str(extracted) + " " + str(buff) + " " + str(ori_block))
+        self.log.write("Debug Extract: " + str(extracted) + " " + str(buff) + " " + str(ori_block))
         return extracted,verify
 
     def bytes_dump(self):
-        buffer = io.BytesIO()
-        self.stream_dump(buffer)
-        return buffer.getvalue()
+        # buffer = io.BytesIO()
+        buffer = self.stream_dump()
+        return buffer
 
-    def stream_dump(self, out_stream):
+    def stream_dump(self):
 
-        # Iterate through blocks, stopping before padding junk
-        for ix, block_bytes in enumerate(map(lambda p: int.to_bytes(p[1], self.blocksize, 'big'),
-                                             sorted(self.block_graph.eliminated.items(), key=lambda p: p[0]))):
-            if ix < self.K - 1 or self.filesize % self.blocksize == 0:
-                out_stream.write(block_bytes)
-            else:
-                out_stream.write(block_bytes[:self.filesize % self.blocksize])
+        data = [-1] * self.filesize
+        sortedDecode = sorted(self.block_graph.eliminated.items())
+        for ix,bytes in enumerate(sortedDecode):
+            index = bytes[0]
+            # hex = int.to_bytes(bytes[1], self.blocksize, 'big')
+            data[index] = int(bytes[1])
+
+        return data
+
+        # dict = map(lambda p: int.to_bytes(p[1], self.blocksize, 'big'),
+        #                                      sorted(self.block_graph.eliminated.items(), key=lambda p: p[0]))
+        # # Iterate through blocks, stopping before padding junk
+        # for ix, block_bytes in enumerate(dict):
+        #     if ix < self.K - 1 or self.filesize % self.blocksize == 0:
+        #         out_stream.write(block_bytes)
+        #     else:
+        #         out_stream.write(block_bytes[:self.filesize % self.blocksize])
 
     def _handle_block(self, src_blocks, block):
         # What to do with new block: add check and pass messages in graph
@@ -200,42 +221,52 @@ class decode:
         return next(self.read_blocks(io.BytesIO(bts)))
 
     def decode(self, JSON, filesize, **kwargs):
+        buff = ""
         decoder = LtDecoder(self.log, **kwargs)
 
         for key in JSON:
             lt_block = JSON[key]
 
-            decoder.consume_block(filesize=filesize, key=key, lt_block=lt_block, blocksize=1)
-            decoder.received_packs += 1
-            if decoder.is_done():
-                print("Decoded Successfully...")
-                break
-            else:
-                print("Need more Packs...Received: "+str(decoder.received_packs))
+            if decoder.consume_block(filesize=filesize, key=key, lt_block=lt_block, blocksize=1):
+                decoder.received_packs += 1
+                if decoder.is_done():
+                    decoder.success_time += 1
+                    self.log.write("Decoded Successfully... "+str(decoder.success_time))
+                    buff = decoder.bytes_dump()
+                    decoder.succeed_and_init()
+                else:
+                    self.log.write("Need more Packs...Received: "+str(decoder.received_packs))
 
-        return decoder.bytes_dump()
+        if buff == "":
+            return decoder.bytes_dump(), 0
+        else:
+            return buff, decoder.success_time
 
 
     def run(self,JSON, filesize, blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA,log=None):
         """Reads from stream, applying the LT decoding algorithm
         to incoming encoded blocks until sufficiently many blocks
         have been received to reconstruct the entire file.
-
-
-
         """
-        print("-----------------------------Extraction---------------------------------------")
+        self.log.write("-----------------------------Extraction---------------------------------------")
         modified_json = {}
         modified_json, sum, valid = Util.eliminateLevels(modified_json, JSON, "")
-        print(modified_json)
-        print("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
+        self.log.write(json.dumps(modified_json))
+        self.log.write("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
 
-        payload = self.decode(modified_json, filesize)
+        payload, times = self.decode(modified_json, filesize)
         # with open('decoded.txt', 'w') as rf:
         #     rf.writelines(payload.decode('utf8'))
-        res = [chr(ord('a')+i) for i in payload]
-        print("     Payload: "+''.join(res))
-        print('-----------------Extraction was conducted successfully...--------------------')
+        res = ""
+        for i in payload:
+            if i==-1:
+                res = res + "?"
+            else:
+                res = res + chr(ord('a')+i)
+
+        # res = [if i==-1 '?' else chr(ord('a')+i) for i in payload]
+        self.log.write("     Payload: "+''.join(res)+ "     .Successed Times: "+str(times))
+        self.log.write('-----------------Extraction was conducted successfully...--------------------')
         return ''.join(res)
 
 if __name__ == '__main__':
