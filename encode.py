@@ -11,7 +11,7 @@ class encode:
     def __init__(self,f_bytes,log=None,blocksize=1, seed=1, c=sampler.DEFAULT_C, delta=sampler.DEFAULT_DELTA , numpacks=30):
         self.log = log
         self.blocksize, self.seed, self.c , self.delta , self.numpacks = 1,1,sampler.DEFAULT_C,sampler.DEFAULT_DELTA,30
-        self.f_bytes = f_bytes
+        self.f_bytes = f_bytes.replace("\n","")
         # get file blocks
         self.filesize, self.blocks = self._split_file(self.f_bytes)
 
@@ -55,7 +55,12 @@ class encode:
             if num not in Set:
                 Set.add(num)
                 ori = ord(s1[num])
-                s1[num] = chr(ori - ori % 2 + ord(crc_text[ind])-ord('0'))
+                if (ori >= 97 and ori <= 122) or (ori >= 65 and ori <= 90):
+                    # 对于小写大写字母：统一向上取结果
+                    s1[num] = chr(ori + ori % 2 - ord(crc_text[ind]) + ord('0'))
+                elif ori >= 48 and ori <= 57:
+                    # 对于数字：统一向下取结果
+                    s1[num] = chr(ori - ori % 2 + ord(crc_text[ind]) - ord('0'))
                 # data = int(data/2)
                 ind += 1
     
