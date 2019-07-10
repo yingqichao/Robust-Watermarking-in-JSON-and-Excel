@@ -141,8 +141,14 @@ class LtDecoder(object):
     def extract(self, lt_block, prng, strlen=7):
         extracted, ori_block, verify = 0, lt_block, ''
         if isinstance(lt_block, int):
+            negative = int(lt_block) < 0
+            if negative:
+                lt_block = str(lt_block)[1:]
             lt_block = str(lt_block)[1:]
         elif isinstance(lt_block, float):
+            negative = int(lt_block) < 0
+            if negative:
+                lt_block = str(lt_block)[1:]
             lt_block = str(lt_block)[1:]
             lt_block = lt_block.replace(".", "")
 
@@ -153,11 +159,13 @@ class LtDecoder(object):
                 buff = num
             if num not in Set:
                 Set.add(num)
-                if ind < 5:
-                    extracted *= 2
-                    extracted += (ord(s1[num]) % 2)# * pow(2, ind)
-                verify += str(ord(s1[num]) % 2)
-                ind += 1
+                ori = ord(s1[num])
+                if (ori >= 97 and ori <= 122) or (ori >= 65 and ori <= 90) or (ori >= 48 and ori <= 57):
+                    if ind < 5:
+                        extracted *= 2
+                        extracted += (ori % 2) # * pow(2, ind)
+                    verify += str(ori % 2)
+                    ind += 1
 
         self.log.write("Debug Extract: " + str(extracted) + " " + str(buff) + " " + str(ori_block))
         return extracted,verify
@@ -196,6 +204,8 @@ class LtDecoder(object):
 class decode:
     def __init__(self,log=None):
         self.log = log
+
+    # The following 4 functions are not used in Java version
 
     def _read_header(self,stream):
         """Read block header from network

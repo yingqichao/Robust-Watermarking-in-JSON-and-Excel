@@ -30,13 +30,19 @@ class encode:
 
     
     def modify(self,key, data, prng):
-    
+        negative = None
         key1,first,ori_data = key,'',data
         #对于数字，首位不嵌入信息
         if isinstance(key, int):
+            negative = int(key) < 0
+            if negative:
+                lt_block = str(key)[1:]
             first = str(key)[0]
             key1 = str(key)[1:]
         elif isinstance(key, float):
+            negative = int(key) < 0
+            if negative:
+                lt_block = str(key)[1:]
             first = str(key)[0]
             key1 = str(key)[1:]
             index = key1.find(".")
@@ -58,11 +64,12 @@ class encode:
                 if (ori >= 97 and ori <= 122) or (ori >= 65 and ori <= 90):
                     # 对于小写大写字母：统一向上取结果
                     s1[num] = chr(ori + ori % 2 - ord(crc_text[ind]) + ord('0'))
+                    ind += 1
                 elif ori >= 48 and ori <= 57:
                     # 对于数字：统一向下取结果
                     s1[num] = chr(ori - ori % 2 + ord(crc_text[ind]) - ord('0'))
                 # data = int(data/2)
-                ind += 1
+                    ind += 1
     
         key1 = ''.join(s1)
     
@@ -73,6 +80,9 @@ class encode:
             key1 = key1[0:index]+"."+key1[index:len(key1)]
             key1 = first + key1
             key1 = float(key1)
+
+        if negative==True:
+            key = '-' + key
     
         self.log.write("Debug Embed: " + str(ori_data) + " " + str(buffer) + " " + str(key1))
         return key1

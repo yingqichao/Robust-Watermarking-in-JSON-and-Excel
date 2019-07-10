@@ -5,6 +5,7 @@ import decode
 import logger
 import randomattacker
 import Util
+# import redis
 
 
 
@@ -34,6 +35,7 @@ if __name__ == "__main__":
         f_bytes = f.read()
 
     enc = encode.encode(f_bytes,log=log)
+
     embeddedJSON = enc.run(JSON)
 
     with open('target.txt', 'r') as f:
@@ -41,7 +43,7 @@ if __name__ == "__main__":
 
 
     # 随机删减攻击
-    modifystrength = 0.1
+    modifystrength = 0.0
 
     JSON, remove_valid, remain_valid, remove_invalid, remain_invalid = randomattacker.randomattack(JSON, total=0.5, core=0.9)
     log.write("--------------------------------------------------------------------")
