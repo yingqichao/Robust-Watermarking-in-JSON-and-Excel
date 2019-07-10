@@ -83,7 +83,7 @@ class PRNG(object):
         """Samples degree given the precomputed
         distributions above and the linear PRNG output
         """
-
+        self.state
         p = self.get_next() / PRNG_MAX_RAND
         for ix, v in enumerate(self.cdf):
             if v > p:

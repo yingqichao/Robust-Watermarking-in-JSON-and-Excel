@@ -32,18 +32,21 @@ class encode:
     def modify(self,key, data, prng):
         negative = None
         key1,first,ori_data = key,'',data
+        startFrom = 0;
         #对于数字，首位不嵌入信息
         if isinstance(key, int):
             negative = int(key) < 0
             if negative:
                 lt_block = str(key)[1:]
-            first = str(key)[0]
+                startFrom += 1
+            first = str(key)[startFrom]
             key1 = str(key)[1:]
         elif isinstance(key, float):
             negative = int(key) < 0
             if negative:
                 lt_block = str(key)[1:]
-            first = str(key)[0]
+                startFrom += 1
+            first = str(key)[startFrom]
             key1 = str(key)[1:]
             index = key1.find(".")
             key1 = key1.replace(".","")
