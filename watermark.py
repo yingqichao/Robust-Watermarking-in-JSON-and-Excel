@@ -5,6 +5,7 @@ import decode
 import logger
 import randomattacker
 import Util
+import collections
 # import redis
 
 
@@ -24,8 +25,16 @@ if __name__ == "__main__":
     with open('original.txt', 'r') as f:
         JSON = json.load(f)
 
-    modified_json = {}
-    modified_json, sum, valid = Util.eliminateLevels(modified_json, JSON, "")
+    # modified_json = collections.OrderedDict()
+    js = {}
+    js, sum, valid = Util.eliminateLevels(js, JSON, "")
+    jsonTreeMap = Util.toTreeMap(js)
+
+    for item in jsonTreeMap:
+        print(item, " ", jsonTreeMap[item])
+
+    print("----------------------------------------------")
+
 
     #打印JSON,将所有key-value设为单层（去除多重的层级关系）
     # map = json.dumps(JSON, sort_keys=True, indent=4, separators=(',', ': '))
@@ -36,7 +45,7 @@ if __name__ == "__main__":
 
     enc = encode.encode(f_bytes,log=log)
 
-    embeddedJSON = enc.run(JSON)
+    embeddedJSON = enc.run(JSON,jsonTreeMap)
 
     with open('target.txt', 'r') as f:
         JSON = json.load(f)

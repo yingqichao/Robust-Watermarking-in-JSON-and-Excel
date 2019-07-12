@@ -1,5 +1,6 @@
 import re
-
+from heapq import heappush,heappop
+from collections import OrderedDict
 
 def genSeed(key):
     seed , i , res = [0]*5 , 0 , 0
@@ -54,6 +55,25 @@ def dec2alpha(dec):
         dec = int(dec/26)
 
     return res
+
+# 将字典变为Java的TreeMap
+def toTreeMap(paramMap):
+    "将paramMap转换为java中的treeMap形式.将map的keys变为heapq.创建有序字典."
+    keys=paramMap.keys()
+    heap=[]
+    for item in keys:
+        heappush(heap,item)
+
+    sort=[]
+    while heap:
+        sort.append(heappop(heap))
+
+    resMap=OrderedDict()
+    for key in sort:
+        resMap[key]=paramMap.get(key)
+
+    return resMap
+
 
 # // BKDR
 # Hash

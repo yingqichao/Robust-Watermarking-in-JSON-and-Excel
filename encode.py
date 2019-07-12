@@ -18,6 +18,7 @@ class encode:
         # init stream vars
         K = len(self.blocks)
         self.prng = sampler.PRNG(params=(K, self.delta, self.c))
+        self.upload_dict = {}
 
 
     def _split_file(self,f_bytes):
@@ -29,7 +30,7 @@ class encode:
         return len(f_bytes), blocks
 
     
-    def modify(self,key, data, prng):
+    def modify(self,key, keyname, data, prng):
         negative = None
         key1,first,ori_data = key,'',data
         startFrom = 0;
@@ -87,7 +88,7 @@ class encode:
         if negative==True:
             key = '-' + key
     
-        self.log.write("Debug Embed: " + str(ori_data) + " " + str(buffer) + " " + str(key1))
+        self.log.write("Debug Embed: data->" + str(ori_data) + " seed-> " + str(buffer) + " " + str(keyname) + " " +str(key1))
         return key1
     
     
@@ -107,7 +108,7 @@ class encode:
             block_data ^= self.blocks[ix]
 
         #根据结果修改JSON
-        return self.modify(value, block_data, self.prng)
+        return self.modify(value, key, block_data, self.prng)
         # return JSON
 
     def dec2alpha(self, dec):
@@ -120,48 +121,79 @@ class encode:
 
         return res
 
-    def eliminateLevels(self, ori_dict, pre, minlen=9):
+    def conductEmbeddingAccordingToTreeMap(self,JSONtreemap,pre,minlen=9):
+        for item in JSONtreemap:
+            # conduct embedding
+            self.upload_dict[item] = self.encoder(item,JSONtreemap[item])
+            # valid += 1
+
+    def update(self, ori_dict, pre, minlen=9):
         sum, valid = 0, 0
         if not isinstance(ori_dict, dict):
             return ori_dict, 1, 0
         for key in ori_dict:
             key_m = ''.join(re.findall(r'[A-Za-z0-9]', key))
             if isinstance(ori_dict[key], dict):
-                _, s, v = self.eliminateLevels(ori_dict[key], pre + key_m)
+                _, s, v = self.update(ori_dict[key], pre + key_m)
                 sum += s
                 valid += v
             elif isinstance(ori_dict[key], list):
                 for ind,item in enumerate(ori_dict[key]):
-                    _, s, v = self.eliminateLevels(item, pre + key_m + str(self.dec2alpha(ind)))
+                    _, s, v = self.update(item, pre + key_m + str(self.dec2alpha(ind)))
                     sum += s
                     valid += v
             elif not isinstance(ori_dict[key], bool) and isinstance(ori_dict[key], (int, str, float)):
                 sum += 1
-                temp = str(ori_dict[key])
-                if len(''.join(re.findall(r'[A-Za-z0-9]', temp))) > minlen and temp[0] != '{':
-                    # conduct embedding
-                    ori_dict[key] = self.encoder(pre + key_m,ori_dict[key])
+                if (pre + key_m) in self.upload_dict:
+                    # 更新
+                    ori_dict[key] = self.upload_dict[pre+key_m]
                     valid += 1
 
         return ori_dict, sum, valid
+
+    # def eliminateLevels(self, ori_dict, pre, minlen=9):
+    #     sum, valid = 0, 0
+    #     if not isinstance(ori_dict, dict):
+    #         return ori_dict, 1, 0
+    #     for key in ori_dict:
+    #         key_m = ''.join(re.findall(r'[A-Za-z0-9]', key))
+    #         if isinstance(ori_dict[key], dict):
+    #             _, s, v = self.eliminateLevels(ori_dict[key], pre + key_m)
+    #             sum += s
+    #             valid += v
+    #         elif isinstance(ori_dict[key], list):
+    #             for ind,item in enumerate(ori_dict[key]):
+    #                 _, s, v = self.eliminateLevels(item, pre + key_m + str(self.dec2alpha(ind)))
+    #                 sum += s
+    #                 valid += v
+    #         elif not isinstance(ori_dict[key], bool) and isinstance(ori_dict[key], (int, str, float)):
+    #             sum += 1
+    #             temp = str(ori_dict[key])
+    #             if len(''.join(re.findall(r'[A-Za-z0-9]', temp))) > minlen and temp[0] != '{':
+    #                 # conduct embedding
+    #                 ori_dict[key] = self.encoder(pre + key_m,ori_dict[key])
+    #                 valid += 1
+    #
+    #     return ori_dict, sum, valid
     
     
     
-    def run(self, JSON):
+    def run(self, JSON, JSONtreemap):
         self.log.write("-----------------------------Embedding---------------------------------------")
 
 
-        block, sum, valid = self.eliminateLevels(JSON, "")
+        self.conductEmbeddingAccordingToTreeMap(JSONtreemap, "")
+        updatedJSON, sum, valid = self.update(JSON,"")
         # self.log.write(json.dumps(modified_json))
-        self.log.write("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
+        # self.log.write("Sum of KEYS: " + str(sum) + ". Sum of Valid: " + str(valid))
     
         # block = self.encoder(f_bytes, modified_json, blocksize,  c, delta)
-        json_str = json.dumps(block)
+        json_str = json.dumps(updatedJSON)
         with open('target.txt', 'w') as rf:
             rf.writelines(json_str)
         self.log.write('-----------------Embedding was conducted successfully...--------------------')
 
-        return block
+        return updatedJSON
 
 
 if __name__ == '__main__':
