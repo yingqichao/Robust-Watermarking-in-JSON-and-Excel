@@ -1,6 +1,8 @@
-Readme.md
+# Robust Watermarking in JSON and Excel
 
-# version 1.1
+Copyright of this repo belongs to 360 Security Tech.
+
+## version 1.1
 
 不需要知道所有的键值，用自定义的算法通过键值的string计算出每个键值的专属伪随机序列种子（基本不会重复）
 
@@ -41,7 +43,7 @@ Readme.md
 2.接收者必须知道水印的长度（也即水印信息分块数量）
 
 
-# version 1.0（original）
+## version 1.0（original）
 
 假定知道所有的键值（JSON中的key），用伪随机序列的seed确定哪些key（字段）用于嵌入信息，如果该字段长度不够，就跳过，继续寻找下一个
 
